@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function Home() {
-  const router = useRouter();
+function ErrorDisplay() {
   const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -16,14 +14,25 @@ export default function Home() {
     }
   }, [searchParams]);
 
+  if (!error) return null;
+
+  return (
+    <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+      <p className="text-sm font-medium">Erreur: {error}</p>
+    </div>
+  );
+}
+
+export default function Home() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleLogin = async () => {
     setIsLoading(true);
-    setError(null);
     try {
       // Rediriger vers la route API qui initie le flux OAuth
       router.push('/api/auth/twitter');
     } catch (err) {
-      setError('Erreur lors de la connexion');
       setIsLoading(false);
     }
   };
@@ -41,11 +50,9 @@ export default function Home() {
             </p>
           </div>
 
-          {error && (
-            <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-800 dark:bg-red-900/20 dark:text-red-400">
-              <p className="text-sm font-medium">Erreur: {error}</p>
-            </div>
-          )}
+          <Suspense fallback={null}>
+            <ErrorDisplay />
+          </Suspense>
 
           <button
             onClick={handleLogin}
