@@ -53,27 +53,51 @@ export async function exchangeCodeForToken(
 ) {
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
   
+  const requestBody = {
+    code,
+    grant_type: 'authorization_code',
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    code_verifier: codeVerifier,
+  };
+
+  console.log('=== EXCHANGE CODE FOR TOKEN - Requête ===');
+  console.log('URL:', 'https://api.twitter.com/2/oauth2/token');
+  console.log('Code:', code);
+  console.log('Code Verifier:', codeVerifier);
+  console.log('Client ID:', clientId);
+  console.log('Redirect URI:', redirectUri);
+  console.log('Body params:', { ...requestBody, code_verifier: codeVerifier });
+  
   const response = await fetch('https://api.twitter.com/2/oauth2/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Authorization': `Basic ${credentials}`,
     },
-    body: new URLSearchParams({
-      code,
-      grant_type: 'authorization_code',
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      code_verifier: codeVerifier,
-    }),
+    body: new URLSearchParams(requestBody),
   });
+
+  console.log('=== EXCHANGE CODE FOR TOKEN - Réponse ===');
+  console.log('Status:', response.status, response.statusText);
+  console.log('Headers:', Object.fromEntries(response.headers.entries()));
 
   if (!response.ok) {
     const error = await response.text();
+    console.log('❌ Erreur lors de l\'échange:', error);
     throw new Error(`Erreur lors de l'échange du token: ${error}`);
   }
 
-  return await response.json();
+  const tokenData = await response.json();
+  console.log('✅ Token Data reçu:', {
+    token_type: tokenData.token_type,
+    expires_in: tokenData.expires_in,
+    scope: tokenData.scope,
+    access_token_length: tokenData.access_token?.length || 0,
+    refresh_token_length: tokenData.refresh_token?.length || 0,
+  });
+
+  return tokenData;
 }
 
 /**
